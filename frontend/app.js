@@ -1,0 +1,265 @@
+const $ = (id) => document.getElementById(id);
+const mic = $("mic");
+const statusEl = $("status");
+const heardEl = $("heard");
+const errorEl = $("error");
+
+const MAX_RECORD_MS = 10000;
+const SILENCE_MS = 1400;
+const SPEECH_LEVEL = 0.02;
+const TARGET_RATE = 16000;
+
+let recording = null;
+let statusTimer = null;
+
+function show(screen) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  $("screen-" + screen).classList.add("active");
+  document.body.dataset.screen = screen;
+}
+
+function setStatus(text) { statusEl.textContent = text; }
+
+function quoted(text) { return "“" + text + "”"; }
+
+function reset() {
+  stopRecording(true);
+  mic.className = "mic";
+  clearInterval(statusTimer);
+  setStatus("Tap the mic");
+  heardEl.textContent = "";
+  errorEl.textContent = "";
+  show("home");
+}
+
+function startSearchMessages() {
+  const msgs = ["Searching the web", "Comparing sources", "Verifying the character"];
+  let i = 0;
+  setStatus(msgs[0]);
+  statusTimer = setInterval(() => { i = (i + 1) % msgs.length; setStatus(msgs[i]); }, 2400);
+}
+
+async function postJson(url, body) {
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    console.error(data.detail);
+    throw new Error("Something went wrong. Please try again.");
+  }
+  return data;
+}
+
+function showError(e) {
+  clearInterval(statusTimer);
+  mic.className = "mic";
+  setStatus("Tap the mic");
+  errorEl.textContent = e instanceof TypeError ? "Can't reach the server. Please try again." : e.message;
+}
+
+async function guess(text, searchQuery) {
+  mic.className = "mic busy";
+  heardEl.textContent = quoted(text);
+  errorEl.textContent = "";
+  startSearchMessages();
+  try {
+    const data = await postJson("/api/guess", { text, search_query: searchQuery || null });
+    clearInterval(statusTimer);
+    mic.className = "mic";
+        if (data.found) showResult(data); else showNotFound(data.reason, text);
+  } catch (e) {
+    showError(e);
+  }
+}
+
+function confidenceLabel(c) {
+  return c >= 0.8 ? "High" : c >= 0.6 ? "Medium" : "Low";
+}
+
+function showResult(d) {
+  $("r-character").textContent = d.character;
+  $("r-title").textContent = d.title + (d.year ? ` (${d.year})` : "");
+  $("r-quote").textContent = quoted(d.quote);
+  $("r-conf").textContent = `Confidence: ${confidenceLabel(d.confidence)} ${Math.round(d.confidence * 100)}%`;
+
+  const img = $("r-photo");
+  const kind = $("r-photo-kind");
+  if (d.image) {
+    img.src = d.image;
+    img.alt = d.character;
+    img.style.display = "block";
+    kind.textContent = d.image_kind === "actor" ? `Actor: ${d.actor}` : "Poster";
+    kind.style.display = "";
+  } else {
+    img.style.display = "none";
+    kind.style.display = "none";
+  }
+
+  const src = $("r-source");
+  src.textContent = d.source_title || d.source_url;
+  src.href = d.source_url;
+  const tm = $("r-tmdb");
+  if (d.tmdb_url) { tm.href = d.tmdb_url; tm.style.display = "inline"; } else { tm.style.display = "none"; }
+
+  $("r-disclaimer").textContent = d.confidence < 0.8
+    ? "This match may be unverified. Please check the source."
+    : "";
+  show("result");
+}
+
+function showNotFound(reason, heard) {
+  $("nf-reason").textContent = (reason || "We couldn't match this line to a reliable source.") + (heard ? " Heard: " + quoted(heard) : "");
+  show("notfound");
+}
+
+function encodeWav(samples, rate) {
+  const buf = new ArrayBuffer(44 + samples.length * 2);
+  const v = new DataView(buf);
+  const tag = (offset, text) => { for (let i = 0; i < text.length; i++) v.setUint8(offset + i, text.charCodeAt(i)); };
+  tag(0, "RIFF");
+  v.setUint32(4, 36 + samples.length * 2, true);
+  tag(8, "WAVE");
+  tag(12, "fmt ");
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true);
+  v.setUint32(28, rate * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  tag(36, "data");
+  v.setUint32(40, samples.length * 2, true);
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    offset += 2;
+  }
+  return new Uint8Array(buf);
+}
+
+async function toWav(blob) {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new Ctx();
+  const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
+  ctx.close();
+  const offline = new OfflineAudioContext(1, Math.max(1, Math.ceil(decoded.duration * TARGET_RATE)), TARGET_RATE);
+  const source = offline.createBufferSource();
+  source.buffer = decoded;
+  source.connect(offline.destination);
+  source.start();
+  const rendered = await offline.startRendering();
+  return encodeWav(rendered.getChannelData(0), TARGET_RATE);
+}
+
+function toBase64(bytes) {
+  let text = "";
+  const step = 0x8000;
+  for (let i = 0; i < bytes.length; i += step) {
+    text += String.fromCharCode.apply(null, bytes.subarray(i, i + step));
+  }
+  return btoa(text);
+}
+
+function stopRecording(discard) {
+  if (!recording) return;
+  const current = recording;
+  current.discard = !!discard;
+  if (current.recorder.state !== "inactive") current.recorder.stop();
+}
+
+async function finishRecording(current) {
+  clearInterval(current.timer);
+  current.stream.getTracks().forEach((t) => t.stop());
+  current.ctx.close();
+  if (recording === current) recording = null;
+  if (current.discard) return;
+
+  if (!current.spoke) {
+    mic.className = "mic";
+    setStatus("Tap the mic");
+    errorEl.textContent = "Didn't hear anything. Try again.";
+    return;
+  }
+
+  mic.className = "mic busy";
+  setStatus("Transcribing");
+  try {
+    const wav = await toWav(new Blob(current.chunks, { type: current.recorder.mimeType }));
+    const heard = await postJson("/api/transcribe", { audio: toBase64(wav), mime: "audio/wav" });
+    if (!heard.transcript) {
+      mic.className = "mic";
+      setStatus("Tap the mic");
+      errorEl.textContent = "Couldn't catch that. Try again.";
+      return;
+    }
+    await guess(heard.quote || heard.transcript, heard.search_query);
+  } catch (e) {
+    showError(e);
+  }
+}
+
+async function listen() {
+  if (!navigator.mediaDevices || !window.MediaRecorder) {
+    errorEl.textContent = "This browser can't record audio. Use Chrome or type the line.";
+    return;
+  }
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    errorEl.textContent = "Microphone permission denied. Allow it or type the line.";
+    return;
+  }
+
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new Ctx();
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 1024;
+  ctx.createMediaStreamSource(stream).connect(analyser);
+  const level = new Float32Array(analyser.fftSize);
+
+  const recorder = new MediaRecorder(stream);
+  const current = { recorder, stream, ctx, chunks: [], spoke: false, discard: false, timer: null };
+  recorder.ondataavailable = (e) => { if (e.data.size) current.chunks.push(e.data); };
+  recorder.onstop = () => finishRecording(current);
+
+  const startedAt = Date.now();
+  let lastVoice = startedAt;
+  current.timer = setInterval(() => {
+    analyser.getFloatTimeDomainData(level);
+    let sum = 0;
+    for (let i = 0; i < level.length; i++) sum += level[i] * level[i];
+    const now = Date.now();
+    if (Math.sqrt(sum / level.length) > SPEECH_LEVEL) {
+      current.spoke = true;
+      lastVoice = now;
+    }
+    if ((current.spoke && now - lastVoice > SILENCE_MS) || now - startedAt > MAX_RECORD_MS) stopRecording();
+  }, 100);
+
+  recording = current;
+  recorder.start();
+  mic.className = "mic listening";
+  setStatus("Listening");
+  heardEl.textContent = "";
+  errorEl.textContent = "";
+}
+
+mic.addEventListener("click", () => {
+  if (mic.classList.contains("listening")) stopRecording();
+  else if (!mic.classList.contains("busy")) listen();
+});
+
+$("manual").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = $("manual-text").value.trim();
+  if (v.length >= 3) guess(v);
+});
+
+$("retry").addEventListener("click", reset);
+$("retry2").addEventListener("click", reset);

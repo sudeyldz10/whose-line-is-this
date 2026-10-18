@@ -538,7 +538,10 @@ footer a { color: #80808d; }
   .info { text-align: center; max-width: 92vw; }
   blockquote { text-align: left; }
   #manual input { width: calc(var(--u) * 22); }
-  footer { padding: 0 calc(var(--u) * 2); }
+  html, body { height: auto; min-height: 100%; }
+  body { overflow-x: hidden; overflow-y: auto; }
+  main { min-height: 100vh; min-height: 100dvh; padding-bottom: calc(var(--u) * 6); }
+  footer { position: relative; left: auto; right: auto; bottom: auto; z-index: 4; padding: 0 calc(var(--u) * 2) calc(var(--u) * 3); }
   .menu-cards { flex-direction: column; gap: calc(var(--u) * 2.4); margin-top: calc(var(--u) * 2.4); }
   .mcard { width: 84vw; padding: calc(var(--u) * 1.6); }
   .mc-img { height: calc(var(--u) * 7); }

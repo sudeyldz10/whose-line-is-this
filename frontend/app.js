@@ -65,7 +65,8 @@ async function postJson(url, body) {
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
     console.error(data.detail);
-    throw new Error("Something went wrong. Please try again.");
+    const friendly = (resp.status === 503 || resp.status === 429) && typeof data.detail === "string";
+    throw new Error(friendly ? data.detail : "Something went wrong. Please try again.");
   }
   return data;
 }
@@ -75,7 +76,8 @@ async function getJson(url) {
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
     console.error(data.detail);
-    throw new Error("Something went wrong. Please try again.");
+    const friendly = (resp.status === 503 || resp.status === 429) && typeof data.detail === "string";
+    throw new Error(friendly ? data.detail : "Something went wrong. Please try again.");
   }
   return data;
 }

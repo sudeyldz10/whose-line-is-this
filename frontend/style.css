@@ -565,3 +565,5 @@ footer a { color: #80808d; }
 
 .heard-line { margin: .6em 0 1em; font-size: calc(var(--u) * 1.15); color: #b9b6d6; }
 .heard-line:empty { display: none; }
+
+.privacy { margin-top: 1em; font-size: calc(var(--u) * 1); color: var(--grey); text-align: center; }

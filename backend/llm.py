@@ -19,7 +19,7 @@ def _get_client() -> genai.Client:
         key = os.getenv("GEMINI_API_KEY")
         if not key:
             raise RuntimeError("GEMINI_API_KEY is missing in the .env file.")
-        _client = genai.Client(api_key=key)
+        _client = genai.Client(api_key=key, http_options=types.HttpOptions(timeout=30000))
     return _client
 
 

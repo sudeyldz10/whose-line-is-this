@@ -95,7 +95,6 @@ def enrich(title: str, year: str, media_type: str, character: str) -> dict:
     out["official_title"] = media.get("title") or media.get("name")
     out["tmdb_url"] = f"https://www.themoviedb.org/{media['media_type']}/{media['id']}"
 
-    
     if actor and actor.get("profile_path"):
         out["character_found"] = True
         out["actor"] = actor.get("name")

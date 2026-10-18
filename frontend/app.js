@@ -11,6 +11,7 @@ const TARGET_RATE = 16000;
 
 let recording = null;
 let statusTimer = null;
+const game = { questions: [], total: 5, win: 4, seconds: 15, i: 0, score: 0, timer: null, locked: false, run: 0 };
 
 function show(screen) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
@@ -22,14 +23,30 @@ function setStatus(text) { statusEl.textContent = text; }
 
 function quoted(text) { return "“" + text + "”"; }
 
-function reset() {
+function idle() {
   stopRecording(true);
-  mic.className = "mic";
   clearInterval(statusTimer);
+  clearTimeout(game.timer);
+  game.run++;
+  mic.className = "mic";
+}
+
+function reset() {
+  idle();
   setStatus("Tap the mic");
   heardEl.textContent = "";
   errorEl.textContent = "";
   show("home");
+}
+
+function go(name, push = true) {
+  if (name === "find") reset();
+  else if (name === "game") startGame();
+  else { idle(); show("menu"); }
+  if (!push) return;
+  try {
+    history.pushState(null, "", name === "menu" ? location.pathname + location.search : "#" + name);
+  } catch (e) {}
 }
 
 function startSearchMessages() {
@@ -45,6 +62,16 @@ async function postJson(url, body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    console.error(data.detail);
+    throw new Error("Something went wrong. Please try again.");
+  }
+  return data;
+}
+
+async function getJson(url) {
+  const resp = await fetch(url);
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
     console.error(data.detail);
@@ -69,7 +96,7 @@ async function guess(text, searchQuery) {
     const data = await postJson("/api/guess", { text, search_query: searchQuery || null });
     clearInterval(statusTimer);
     mic.className = "mic";
-        if (data.found) showResult(data); else showNotFound(data.reason, text);
+    if (data.found) showResult(data); else showNotFound();
   } catch (e) {
     showError(e);
   }
@@ -79,10 +106,22 @@ function confidenceLabel(c) {
   return c >= 0.8 ? "High" : c >= 0.6 ? "Medium" : "Low";
 }
 
+function plain(t) {
+  return String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function heardNote(d) {
+  const parts = [];
+  if (d.heard && plain(d.heard) !== plain(d.quote)) parts.push(`You said: ${quoted(d.heard)}`);
+  if (d.official_quote === false) parts.push("Wording may differ from the original.");
+  return parts.join(" ");
+}
+
 function showResult(d) {
   $("r-character").textContent = d.character;
   $("r-title").textContent = d.title + (d.year ? ` (${d.year})` : "");
   $("r-quote").textContent = quoted(d.quote);
+  $("r-heard").textContent = heardNote(d);
   $("r-conf").textContent = `Confidence: ${confidenceLabel(d.confidence)} ${Math.round(d.confidence * 100)}%`;
 
   const img = $("r-photo");
@@ -110,8 +149,7 @@ function showResult(d) {
   show("result");
 }
 
-function showNotFound(reason, heard) {
-  $("nf-reason").textContent = (reason || "We couldn't match this line to a reliable source.") + (heard ? " Heard: " + quoted(heard) : "");
+function showNotFound() {
   show("notfound");
 }
 
@@ -261,5 +299,169 @@ $("manual").addEventListener("submit", (e) => {
   if (v.length >= 3) guess(v);
 });
 
+function gameError(e) {
+  $("g-error").textContent = e instanceof TypeError ? "Can't reach the server. Please try again." : e.message;
+}
+
+const SEEN_KEY = "wlit-seen2";
+let seenMem = [];
+
+function loadSeen() {
+  try {
+    const raw = localStorage.getItem(SEEN_KEY);
+    if (raw) return JSON.parse(raw).filter(Number.isInteger);
+  } catch (e) {}
+  return seenMem;
+}
+
+function saveSeen(list) {
+  seenMem = list;
+  try {
+    localStorage.setItem(SEEN_KEY, JSON.stringify(list));
+  } catch (e) {}
+}
+
+async function startGame() {
+  idle();
+  const run = game.run;
+  show("game");
+  $("g-error").textContent = "";
+  $("g-line").textContent = "";
+  $("g-options").innerHTML = "";
+  $("g-reveal").classList.remove("on");
+  $("g-round").textContent = "Round 1/" + game.total;
+  $("g-score").textContent = "Score 0";
+  $("g-timer").style.animation = "none";
+  try {
+    const data = await getJson("/api/game/new?seen=" + loadSeen().join(","));
+    if (run !== game.run) return;
+    Object.assign(game, { questions: data.questions, total: data.total, win: data.win_score, seconds: data.seconds, i: 0, score: 0 });
+    saveSeen(loadSeen().concat(data.questions.map((q) => q.id)).slice(-60));
+    showQuestion();
+  } catch (e) {
+    if (run === game.run) gameError(e);
+  }
+}
+
+function showQuestion() {
+  const q = game.questions[game.i];
+  game.locked = false;
+  $("g-error").textContent = "";
+  $("g-mystery").className = "g-mystery";
+  $("g-round").textContent = `Round ${game.i + 1}/${game.total}`;
+  $("g-score").textContent = `Score ${game.score}`;
+  const line = $("g-line");
+  line.textContent = quoted(q.line);
+  line.classList.toggle("long", q.line.length > 40);
+  line.style.animation = "none";
+  void line.offsetWidth;
+  line.style.animation = "";
+
+  const box = $("g-options");
+  box.innerHTML = "";
+  q.options.forEach((name) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opt";
+    b.textContent = name;
+    b.addEventListener("click", () => answer(name, b));
+    box.appendChild(b);
+  });
+  $("g-reveal").classList.remove("on");
+
+  const bar = $("g-timer");
+  bar.style.animation = "none";
+  void bar.offsetWidth;
+  bar.style.animation = `drain ${game.seconds}s linear forwards`;
+  clearTimeout(game.timer);
+  game.timer = setTimeout(() => answer(null, null), game.seconds * 1000);
+}
+
+async function answer(choice, btn) {
+  if (game.locked) return;
+  game.locked = true;
+  clearTimeout(game.timer);
+  const run = game.run;
+  $("g-timer").style.animationPlayState = "paused";
+  const options = document.querySelectorAll("#g-options .opt");
+  options.forEach((o) => { o.disabled = true; });
+  const q = game.questions[game.i];
+
+  let r;
+  try {
+    r = await postJson("/api/game/check", { id: q.id, choice });
+  } catch (e) {
+    if (run !== game.run) return;
+    gameError(e);
+    options.forEach((o) => { o.disabled = false; });
+    game.locked = false;
+    return;
+  }
+  if (run !== game.run) return;
+
+  options.forEach((o) => {
+    if (o.textContent === r.character) o.classList.add("right");
+    else if (o === btn) o.classList.add("wrong");
+  });
+  $("g-mystery").classList.add(r.correct ? "ok" : "bad");
+  if (r.correct) game.score++;
+  $("g-score").textContent = `Score ${game.score}`;
+  const verdict = $("g-verdict");
+  verdict.textContent = r.correct ? "Correct!" : choice ? "Nope!" : "Time's up!";
+  verdict.className = "g-verdict " + (r.correct ? "good" : "bad");
+  $("g-answer").textContent = `${r.character} · ${r.title} (${r.year})`;
+  $("g-next").textContent = game.i + 1 < game.total ? "Next" : "See result";
+  $("g-reveal").classList.add("on");
+}
+
+function finishGame() {
+  const won = game.score >= game.win;
+  $("go-title").textContent = won ? "You win!" : "So close!";
+  $("go-icon").src = won ? "img/lucky.png" : "img/mystery.png";
+  $("go-score").textContent = `${game.score} / ${game.total}`;
+  $("go-text").textContent = won
+    ? "Show this screen at the stand and claim your prize."
+    : `You need ${game.win - game.score} more to win a prize. Give it another go!`;
+  show("gameover");
+}
+
+$("g-next").addEventListener("click", () => {
+  game.i++;
+  if (game.i < game.total) showQuestion(); else finishGame();
+});
+$("go-again").addEventListener("click", () => go("game", false));
+$("back").addEventListener("click", () => go("menu"));
+const WARP = {
+  find: { icon: "img/magnifier.png", text: "Warming up the mic" },
+  game: { icon: "img/lucky.png", text: "Shuffling the lines" },
+};
+let warping = false;
+
+function warp(name) {
+  if (warping) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { go(name); return; }
+  warping = true;
+  const el = $("warp");
+  $("warp-icon").src = WARP[name].icon;
+  $("warp-text").textContent = WARP[name].text;
+  el.className = "warp on " + name;
+  setTimeout(() => go(name), 450);
+  setTimeout(() => el.classList.add("out"), 1100);
+  setTimeout(() => { el.className = "warp"; warping = false; }, 1500);
+}
+
+["img/tunnel-pink.jpg", "img/tunnel-blue.jpg", "img/magnifier.png", "img/lucky.png", "img/mystery.png"]
+  .forEach((src) => { new Image().src = src; });
+
+document.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => warp(b.dataset.go)));
+
+window.addEventListener("popstate", () => {
+  const name = location.hash.slice(1);
+  go(name === "find" || name === "game" ? name : "menu", false);
+});
+
 $("retry").addEventListener("click", reset);
 $("retry2").addEventListener("click", reset);
+
+const first = location.hash.slice(1);
+go(first === "find" || first === "game" ? first : "menu", false);

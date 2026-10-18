@@ -4,9 +4,12 @@ import re
 import time
 
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+FALLBACK_MODELS = [m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash,gemini-2.5-flash-lite").split(",") if m.strip()]
+RETRY_CODES = {429, 500, 503, 504}
+ATTEMPTS = 3
 _client = None
 
 
@@ -30,36 +33,25 @@ def _parse_json(text: str) -> dict:
         return {}
 
 
-FALLBACK_MODELS = [
-    m.strip()
-    for m in os.getenv("GEMINI_FALLBACKS", "gemini-2.5-flash,gemini-2.5-flash-lite").split(",")
-    if m.strip()
-]
-RETRY_CODES = {404, 429, 500, 503, 504}
-
-
 def _generate(system: str, contents) -> dict:
+    config = types.GenerateContentConfig(
+        system_instruction=system,
+        response_mime_type="application/json",
+        temperature=0.1,
+    )
     last = None
-    for model in [MODEL, *FALLBACK_MODELS]:
-        for attempt in range(2):
+    for model in [MODEL] + [m for m in FALLBACK_MODELS if m != MODEL]:
+        for attempt in range(ATTEMPTS):
             try:
-                resp = _get_client().models.generate_content(
-                    model=model,
-                    contents=contents,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system,
-                        response_mime_type="application/json",
-                        temperature=0.1,
-                    ),
-                )
+                resp = _get_client().models.generate_content(model=model, contents=contents, config=config)
                 return _parse_json(resp.text)
-            except RuntimeError:
-                raise
-            except Exception as e:
-                if getattr(e, "code", None) not in RETRY_CODES:
-                    raise
+            except errors.APIError as e:
                 last = e
-                time.sleep(1 + attempt)
+                if e.code == 404:
+                    break
+                if e.code not in RETRY_CODES:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
     raise last
 
 
@@ -103,14 +95,19 @@ def analyze_results(quote: str, results: list[dict]) -> dict:
         for i, r in enumerate(results)
     )
     system = (
-        "Using only the search results below, identify the character who says the given line "
-        "and the movie or TV production it comes from. The line may be in any language, possibly a "
-        "dubbed version. Rely strictly on evidence in the results. "
+        "Using only the search results below, identify the character who SPEAKS the given line "
+        "and the movie or TV production it comes from. The character must be the one who says the line, "
+        "never a character the line is about, addressed to, or merely mentioned in the same page. "
+        "If a line is about two people (for example a couple), name only the one who says it. "
+        "If the results do not make clear who speaks it, lower the confidence below 0.6. "
+        "The line may be in any language, possibly a dubbed version. Rely strictly on evidence in the results. "
         "If the results do not support the line, set found to false. "
         "If sources contradict each other, lower the confidence. "
-        "Use the original title of the production. Return ONLY JSON: "
+        "Use the original title of the production. "
+        "Also give official_quote: the line copied exactly as it is written in the search results, "
+        "or an empty string if no result shows the exact wording. Return ONLY JSON: "
         '{"found": true or false, "character": "character name", "title": "original title", '
-        '"year": "year or empty", "media_type": "movie or tv", '
+        '"year": "year or empty", "media_type": "movie or tv", "official_quote": "exact wording or empty", '
         '"source_index": number of the best source, '
         '"supporting_indices": [numbers of all sources that support the answer], '
         '"confidence": number from 0 to 1, "note": "one sentence of reasoning"}'

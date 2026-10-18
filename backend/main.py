@@ -9,9 +9,10 @@ from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
-from . import cache, llm, search, tmdb  # noqa: E402
+from . import cache, game, llm, lookup, search, tmdb  # noqa: E402
 
 app = FastAPI(title="Whose Line Is This?")
+app.include_router(game.router)
 
 MIN_CONFIDENCE = 0.45
 
@@ -45,6 +46,20 @@ def compute_confidence(analysis: dict, info: dict) -> float:
     else:
         conf *= 0.7
     return round(min(conf, 0.97), 2)
+
+
+def _norm(text: str) -> str:
+    return " ".join("".join(c if c.isalnum() else " " for c in text.lower().replace("'", "")).split())
+
+
+def pick_quote(analysis: dict, results: list[dict], fallback: str) -> tuple[str, bool]:
+    official = str(analysis.get("official_quote") or "").strip()
+    if len(official.split()) >= 3:
+        needle = _norm(official)
+        for r in results:
+            if needle and needle in _norm(f"{r['title']} {r['content']}"):
+                return official, True
+    return fallback, False
 
 
 def label(conf: float) -> str:
@@ -102,17 +117,20 @@ def guess(req: GuessRequest):
         return {**cached, "from_cache": True}
 
     try:
-        prep = llm.prepare_query(transcript)
-        print("HEARD:", transcript, "| QUERY:", prep["search_query"])
+        query = (req.search_query or "").strip()[:200]
+        if len(query) >= 3:
+            prep = {"cleaned_quote": transcript, "search_query": query}
+        else:
+            prep = llm.prepare_query(transcript)
         results = search.web_search(prep["search_query"])
-        print("RESULTS:", [r["title"] for r in results])
         if not results:
             return {"found": False, "reason": "No search results."}
 
         analysis = llm.analyze_results(prep["cleaned_quote"], results)
-        print("ANALYSIS:", analysis)
         if not analysis.get("found") or not analysis.get("character") or not analysis.get("title"):
             return {"found": False, "reason": "The line could not be matched to a reliable source."}
+
+        analysis = lookup.fix_speaker(analysis, prep["cleaned_quote"], transcript)
 
         info = tmdb.enrich(
             analysis["title"],
@@ -121,10 +139,8 @@ def guess(req: GuessRequest):
             analysis["character"],
         )
     except RuntimeError as e:
-        print("GUESS ERROR:", repr(e))
         raise HTTPException(500, str(e))
     except Exception as e:
-        print("GUESS ERROR:", repr(e))
         raise HTTPException(502, f"External service error: {type(e).__name__}")
 
     conf = compute_confidence(analysis, info)
@@ -134,12 +150,15 @@ def guess(req: GuessRequest):
     idx = analysis.get("source_index")
     src = results[idx] if isinstance(idx, int) and 0 <= idx < len(results) else results[0]
 
+    quote, official = pick_quote(analysis, results, prep["cleaned_quote"])
+
     payload = {
         "found": True,
         "character": analysis["character"],
         "title": info["official_title"] or analysis["title"],
         "year": analysis.get("year") or "",
-        "quote": prep["cleaned_quote"],
+        "quote": quote,
+        "official_quote": official,
         "heard": transcript,
         "image": info["image"],
         "image_kind": info["image_kind"],

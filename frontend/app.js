@@ -402,6 +402,7 @@ async function answer(choice, btn) {
   $("g-timer").style.animationPlayState = "paused";
   const options = document.querySelectorAll("#g-options .opt");
   options.forEach((o) => { o.disabled = true; });
+  if (btn) btn.classList.add("picked");
   const q = game.questions[game.i];
 
   let r;
@@ -410,13 +411,14 @@ async function answer(choice, btn) {
   } catch (e) {
     if (run !== game.run) return;
     gameError(e);
-    options.forEach((o) => { o.disabled = false; });
+    options.forEach((o) => { o.disabled = false; o.classList.remove("picked"); });
     game.locked = false;
     return;
   }
   if (run !== game.run) return;
 
   options.forEach((o) => {
+    o.classList.remove("picked");
     if (o.textContent === r.character) o.classList.add("right");
     else if (o === btn) o.classList.add("wrong");
   });
@@ -500,6 +502,7 @@ async function startSong() {
     if (run !== song.run) return;
     Object.assign(song, { questions: data.questions, total: data.total, win: data.win_score, listen: data.listen_ms, think: data.think_seconds, i: 0, score: 0 });
     saveSongSeen(mergeSeen(loadSongSeen(), data));
+    preloadClip(data.questions[0] && data.questions[0].clip);
     showSong();
   } catch (e) {
     if (run === song.run) songError(e);
@@ -529,12 +532,14 @@ function waitReady(run) {
 
 async function playClip(q, run) {
   $("s-hear").classList.remove("on");
-  $("s-status").textContent = "Get ready";
+  $("s-status").textContent = "Loading clip";
+  $("s-cd").classList.add("spinning");
   player.pause();
   player.src = q.clip;
   player.load();
   await waitReady(run);
   if (run !== song.run) return;
+  $("s-cd").classList.remove("spinning");
   try { player.currentTime = q.start || 0; } catch (e) {}
   try {
     await player.play();
@@ -567,8 +572,21 @@ function startThinking(run) {
   song.timer = setTimeout(() => answerSong(null, null), song.think * 1000);
 }
 
+const preloader = new Audio();
+preloader.preload = "auto";
+
+function preloadClip(url) {
+  if (!url) return;
+  try {
+    preloader.src = url;
+    preloader.load();
+  } catch (e) {}
+}
+
 async function showSong() {
   const q = song.questions[song.i];
+  const next = song.questions[song.i + 1];
+  if (next) setTimeout(() => preloadClip(next.clip), 1500);
   const run = song.run;
   song.locked = true;
   $("s-error").textContent = "";
@@ -625,6 +643,7 @@ async function answerSong(choice, btn) {
   $("s-timer").style.animationPlayState = "paused";
   const options = document.querySelectorAll("#s-options .opt");
   options.forEach((o) => { o.disabled = true; });
+  if (btn) btn.classList.add("picked");
   const q = song.questions[song.i];
 
   let r;
@@ -633,13 +652,14 @@ async function answerSong(choice, btn) {
   } catch (e) {
     if (run !== song.run) return;
     songError(e);
-    options.forEach((o) => { o.disabled = false; });
+    options.forEach((o) => { o.disabled = false; o.classList.remove("picked"); });
     song.locked = false;
     return;
   }
   if (run !== song.run) return;
 
   options.forEach((o) => {
+    o.classList.remove("picked");
     if (o.textContent === r.answer) o.classList.add("right");
     else if (o === btn) o.classList.add("wrong");
   });

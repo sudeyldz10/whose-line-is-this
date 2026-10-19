@@ -660,3 +660,8 @@ body[data-screen="home"] .voice-note { display: block; }
 
 .song-note {display:none}
 body[data-screen="song"] .song-note {display:block}
+
+.opt.picked, .opt.picked:disabled { opacity: 1; background: var(--lime); transform: scale(1.04); box-shadow: 0 0 0 .1em #fff, 0 0 calc(var(--u) * 1.6) rgba(223, 255, 46, .55); }
+@media (hover: hover) and (min-aspect-ratio: 1/1) {
+  .menu-cards .mcard:hover, .menu-cards .mcard:focus-visible { transform: rotate(0) scale(1.04); }
+}

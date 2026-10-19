@@ -130,3 +130,43 @@ def test_search_budget(client, monkeypatch):
     assert not budget.take("search", "1.1.1.1")
     assert budget.take("search", "2.2.2.2")
     cache.DB_PATH.unlink(missing_ok=True)
+
+
+def test_song_not_ready_without_clips(client, monkeypatch):
+    from backend import song
+
+    monkeypatch.setattr(song, "CLIPS", {})
+    monkeypatch.setattr(song, "local_clip", lambda s: None)
+    assert client.get("/api/song/ready").json() == {"ready": False}
+    assert client.get("/api/song/new").status_code == 503
+
+
+def test_song_flow(client, monkeypatch):
+    from backend import song
+
+    monkeypatch.setattr(song, "CLIPS", {song.slug(s["title"], s["artist"]): "https://example.com/c.mp3" for s in song.SONGS})
+    monkeypatch.setattr(song, "local_clip", lambda s: None)
+    assert client.get("/api/song/ready").json() == {"ready": True}
+    data = client.get("/api/song/new").json()
+    assert len(data["questions"]) == 5
+    assert len({q["id"] for q in data["questions"]}) == 5
+    assert len({song.SONGS[q["id"]]["artist"] for q in data["questions"]}) == 5
+    for q in data["questions"]:
+        assert len(set(q["options"])) == 4
+        right = song.label(song.SONGS[q["id"]])
+        assert right in q["options"]
+        assert 0 < q["start"] < 27
+        ok = client.post("/api/song/check", json={"id": q["id"], "choice": right}).json()
+        assert ok["correct"] is True and ok["answer"] == right
+        bad = client.post("/api/song/check", json={"id": q["id"], "choice": None}).json()
+        assert bad["correct"] is False
+
+
+def test_song_seen_avoidance(client, monkeypatch):
+    from backend import song
+
+    monkeypatch.setattr(song, "CLIPS", {song.slug(s["title"], s["artist"]): "https://example.com/c.mp3" for s in song.SONGS})
+    monkeypatch.setattr(song, "local_clip", lambda s: None)
+    first = [q["id"] for q in client.get("/api/song/new").json()["questions"]]
+    second = [q["id"] for q in client.get("/api/song/new?seen=" + ",".join(map(str, first))).json()["questions"]]
+    assert not set(first) & set(second)

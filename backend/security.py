@@ -97,7 +97,7 @@ CSP = (
     "script-src 'self'; "
     "font-src 'self'; "
     "connect-src 'self'; "
-    "media-src 'self' blob:; "
+    "media-src 'self' blob: data: " + " ".join(config.MEDIA_SRC_EXTRA) + "; "
     "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
 )
 

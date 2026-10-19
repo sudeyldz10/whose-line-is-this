@@ -571,3 +571,92 @@ footer a { color: #80808d; }
 
 .voice-note { display: none; margin-top: .3em; }
 body[data-screen="home"] .voice-note { display: block; }
+
+.pill.blue { background: #86dcff; box-shadow: 0 0 0 .13em #86dcff; }
+.mcard.song { border-color: var(--green); transform: rotate(-.8deg); }
+.mcard.song .mc-title { color: #86dcff; }
+.menu-cards .mcard { width: calc(var(--u) * 26); }
+.menu-cards { gap: calc(var(--u) * 3.4); }
+.menu-cards .mc-title { font-size: calc(var(--u) * 3.1); white-space: nowrap; }
+.menu-cards .mc-text { min-height: 4.2em; }
+.mcard.find { transform: rotate(-1.6deg); }
+.mcard.play { transform: rotate(1.4deg); }
+.mcard.song:hover, .mcard.song:focus-visible { transform: rotate(0) scale(1.04); }
+
+.s-cd {
+  flex: none; height: calc(var(--u) * 13); width: auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 calc(var(--u) * .8) rgba(134, 220, 255, .25));
+  transition: filter .3s;
+}
+.s-cd.spinning { animation: spin 1.4s steps(24) infinite; }
+.s-cd.ok { filter: drop-shadow(0 0 calc(var(--u) * 1.4) var(--green)); }
+.s-cd.bad { filter: drop-shadow(0 0 calc(var(--u) * 1.4) #ff4d7a); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.s-box {
+  flex: 1; min-width: 0; position: relative;
+  padding: calc(var(--u) * 1.8) calc(var(--u) * 2.4);
+  background: #0b0b22;
+  border: 3px solid var(--green);
+  box-shadow: calc(var(--u) * 1) calc(var(--u) * .8) 0 #18207a;
+  transform: rotate(.8deg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: calc(var(--u) * 12);
+  animation: rise .45s ease-out both;
+}
+.s-status {
+  font-family: "Pixelify Sans", monospace; font-weight: 700;
+  letter-spacing: .25em; text-transform: uppercase;
+  font-size: calc(var(--u) * 1.7); color: #86dcff; margin-top: calc(var(--u) * 1.2);
+}
+.s-hear { margin-top: calc(var(--u) * 1.2); display: none; }
+.s-hear.on { display: inline-block; }
+.eq { display: flex; align-items: flex-end; gap: calc(var(--u) * .5); height: calc(var(--u) * 5); }
+.eq i {
+  display: block; width: calc(var(--u) * 1.1); height: 18%;
+  background: #86dcff; box-shadow: inset 0 calc(var(--u) * -.5) 0 #3a8fff;
+}
+.eq.on i { animation: eqb .5s steps(5) infinite alternate; }
+.eq i:nth-child(1) { animation-delay: -.40s; } .eq i:nth-child(2) { animation-delay: -.10s; }
+.eq i:nth-child(3) { animation-delay: -.30s; } .eq i:nth-child(4) { animation-delay: -.05s; }
+.eq i:nth-child(5) { animation-delay: -.45s; } .eq i:nth-child(6) { animation-delay: -.20s; }
+.eq i:nth-child(7) { animation-delay: -.35s; } .eq i:nth-child(8) { animation-delay: -.15s; }
+.eq i:nth-child(9) { animation-delay: -.25s; }
+@keyframes eqb { from { height: 15%; } to { height: 100%; } }
+.warp.song .warp-bg { background-image: url(img/tunnel-green.jpg); }
+.warp.song .warp-text { color: #7dff7d; }
+.warp.song .warp-bar i { background: #7dff7d; }
+#screen-song .g-top .tag { font-family: "Lilita One", sans-serif; font-weight: 400; letter-spacing: .1em; font-size: calc(var(--u) * 1.2); }
+#s-timer.held { animation: none; transform: scaleX(1); background: var(--lime); }
+@media (max-aspect-ratio: 1 / 1) {
+  .menu-cards .mcard { width: 84vw; }
+  .menu-cards .mc-title { font-size: calc(var(--u) * 3.2); }
+  .menu-cards .mc-text { min-height: 0; }
+  .g-wrap { margin-top: calc(var(--u) * 8); }
+  .menu-cards { gap: calc(var(--u) * 2.4); }
+  .menu-cards .mcard, .menu-cards .mcard.find, .menu-cards .mcard.play, .menu-cards .mcard.song { transform: none; }
+  .s-cd { height: calc(var(--u) * 9); }
+  .s-box { min-height: calc(var(--u) * 9); transform: none; }
+  .s-status { font-size: calc(var(--u) * 2); }
+  .eq { height: calc(var(--u) * 4.5); }
+  .eq i { width: calc(var(--u) * 1.4); }
+}
+
+.mcard.song[hidden] { display: none; }
+.edition {
+  display: inline-block; margin-top: calc(var(--u) * 1.2);
+  font-family: "Lilita One", sans-serif; text-transform: uppercase; letter-spacing: .04em;
+  font-size: calc(var(--u) * 2.1); line-height: 1;
+  color: var(--navy); background: var(--lime);
+  border: .1em solid var(--navy); box-shadow: 0 0 0 .1em var(--lime);
+  padding: .22em .8em; border-radius: 999px;
+  transform: rotate(-5deg);
+}
+.edition.sm { font-size: calc(var(--u) * 1.5); margin: 0; }
+@media (max-aspect-ratio: 1 / 1) {
+  .edition { font-size: calc(var(--u) * 2.6); }
+  .edition.sm { font-size: calc(var(--u) * 1.8); }
+}
+
+.song-note {display:none}
+body[data-screen="song"] .song-note {display:block}

@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
-from . import budget, cache, config, game, llm, lookup, search, security, tmdb  # noqa: E402
+from . import budget, cache, config, game, llm, lookup, search, security, song, tmdb  # noqa: E402
 
 security.setup_logging()
 log = logging.getLogger("app")
@@ -37,6 +37,7 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 app.include_router(game.router)
+app.include_router(song.router)
 
 GENERIC_ERROR = "Something went wrong on our side. Please try again."
 QUOTA_ERROR = "Find the line is very busy right now. Try Guess the line, or come back a bit later!"

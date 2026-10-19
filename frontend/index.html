@@ -47,6 +47,13 @@
           <span class="mc-text">We show the line, you name the character. Get all 5 right and win a prize!</span>
           <span class="pill alt mc-btn">Play</span>
         </button>
+        <button type="button" class="mcard song" data-go="song" id="card-song" hidden>
+          <img class="mc-img" src="img/note-ear.png" alt="" />
+          <span class="edition">Song Edition</span>
+          <span class="mc-title">Guess the song</span>
+          <span class="mc-text">Hear a 3-second clip and name the song. Get all 5 right and win a prize!</span>
+          <span class="pill blue mc-btn">Listen</span>
+        </button>
       </div>
     </section>
 
@@ -124,6 +131,33 @@
       </div>
     </section>
 
+    <section id="screen-song" class="screen">
+      <div class="g-wrap">
+        <div class="g-top">
+          <span class="tag green" id="s-round">Round 1/5</span>
+          <span class="edition sm">Song Edition</span>
+          <span class="tag green" id="s-score">Score 0</span>
+        </div>
+        <div class="timer"><i id="s-timer"></i></div>
+        <p class="g-ask">Which song is this?</p>
+        <div class="g-main">
+          <img id="s-cd" class="s-cd" src="img/cd.png" alt="" />
+          <div class="s-box">
+            <div class="eq" id="s-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <p id="s-status" class="s-status">Get ready</p>
+            <button id="s-hear" class="pxbtn s-hear" type="button">Tap to hear</button>
+          </div>
+        </div>
+        <div id="s-options" class="g-options"></div>
+        <div id="s-reveal" class="g-reveal">
+          <p id="s-verdict" class="g-verdict"></p>
+          <p id="s-answer" class="g-answer"></p>
+          <button id="s-next" class="pxbtn" type="button">Next</button>
+        </div>
+        <p id="s-error" class="error"></p>
+      </div>
+    </section>
+
     <section id="screen-gameover" class="screen">
       <h2 class="nf-title" id="go-title">You win!</h2>
       <img id="go-icon" class="go-icon" alt="" />
@@ -138,6 +172,7 @@
   <footer>
     Movie and TV data from <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a>.
     This product uses the TMDB API but is not endorsed or certified by TMDB.
+    <span class="song-note">Song previews courtesy of Apple Music / iTunes.</span>
     <span class="voice-note">Your voice is sent to Google Gemini to read the line. We do not store it.</span>
   </footer>
 

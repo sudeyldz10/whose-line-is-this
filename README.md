@@ -19,7 +19,7 @@ Replikler ve şıklar `backend/game_data.py` içinde. Yeni replik eklemek için 
 ## Güvenlik ve canlıya alma
 
 - Açılışta üç API anahtarı kontrol edilir; biri eksikse sunucu hangisinin eksik olduğunu yazıp başlamaz.
-- `/api/guess` ve `/api/transcribe` IP başına dakikada 30, diğer uçlar 240 istekle sınırlıdır (`.env` ile değişir).
+- `/api/guess` ve `/api/transcribe` IP başına dakikada 120, diğer uçlar 240 istekle sınırlıdır (`.env` ile değişir).
 - İstek gövdesi en fazla 3 MB. Metin alanlarının uzunluk sınırı var.
 - Tüm yanıtlarda güvenlik başlıkları (CSP, X-Frame-Options vb.) bulunur. Hata detayları kullanıcıya gösterilmez, JSON olarak loglanır; anahtarlar loglarda maskelenir. Ses ve konuşma metni loglanmaz.
 - `GET /health`: anahtarları ve SQLite cache'i kontrol eder, sorun varsa 503 döner.

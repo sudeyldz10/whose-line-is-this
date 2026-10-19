@@ -11,6 +11,10 @@ const TARGET_RATE = 16000;
 
 let recording = null;
 let statusTimer = null;
+const player = new Audio();
+player.preload = "auto";
+const song = { questions: [], total: 5, win: 5, listen: 3000, think: 7, i: 0, score: 0, timer: null, clipTimer: null, locked: false, run: 0 };
+let lastMode = "game";
 const game = { questions: [], total: 5, win: 4, seconds: 15, i: 0, score: 0, timer: null, locked: false, run: 0 };
 
 function show(screen) {
@@ -27,7 +31,11 @@ function idle() {
   stopRecording(true);
   clearInterval(statusTimer);
   clearTimeout(game.timer);
+  clearTimeout(song.timer);
+  clearTimeout(song.clipTimer);
+  player.pause();
   game.run++;
+  song.run++;
   mic.className = "mic";
 }
 
@@ -42,6 +50,7 @@ function reset() {
 function go(name, push = true) {
   if (name === "find") reset();
   else if (name === "game") startGame();
+  else if (name === "song") startSong();
   else { idle(); show("menu"); }
   if (!push) return;
   try {
@@ -305,7 +314,13 @@ function gameError(e) {
   $("g-error").textContent = e instanceof TypeError ? "Can't reach the server. Please try again." : e.message;
 }
 
-const SEEN_KEY = "wlit-seen2";
+function mergeSeen(list, data) {
+  const ids = data.questions.map((q) => q.id);
+  const base = data.reset ? [] : list;
+  return Array.from(new Set(base.concat(ids))).slice(-1500);
+}
+
+const SEEN_KEY = "wlit-seen3";
 let seenMem = [];
 
 function loadSeen() {
@@ -338,7 +353,7 @@ async function startGame() {
     const data = await getJson("/api/game/new?seen=" + loadSeen().join(","));
     if (run !== game.run) return;
     Object.assign(game, { questions: data.questions, total: data.total, win: data.win_score, seconds: data.seconds, i: 0, score: 0 });
-    saveSeen(loadSeen().concat(data.questions.map((q) => q.id)).slice(-60));
+    saveSeen(mergeSeen(loadSeen(), data));
     showQuestion();
   } catch (e) {
     if (run === game.run) gameError(e);
@@ -416,14 +431,15 @@ async function answer(choice, btn) {
   $("g-reveal").classList.add("on");
 }
 
-function finishGame() {
-  const won = game.score >= game.win;
+function finishGame(state = game, mode = "game") {
+  lastMode = mode;
+  const won = state.score >= state.win;
   $("go-title").textContent = won ? "You win!" : "So close!";
-  $("go-icon").src = won ? "img/lucky.png" : "img/mystery.png";
-  $("go-score").textContent = `${game.score} / ${game.total}`;
+  $("go-icon").src = won ? "img/lucky.png" : mode === "song" ? "img/cd.png" : "img/mystery.png";
+  $("go-score").textContent = `${state.score} / ${state.total}`;
   $("go-text").textContent = won
     ? "Show this screen at the stand and claim your prize."
-    : `You need ${game.win - game.score} more to win a prize. Give it another go!`;
+    : `You need ${state.win - state.score} more to win a prize. Give it another go!`;
   show("gameover");
 }
 
@@ -431,16 +447,229 @@ $("g-next").addEventListener("click", () => {
   game.i++;
   if (game.i < game.total) showQuestion(); else finishGame();
 });
-$("go-again").addEventListener("click", () => go("game", false));
+$("go-again").addEventListener("click", () => go(lastMode, false));
+
+const SONG_SEEN_KEY = "wlit-seen-song2";
+let songSeenMem = [];
+
+function loadSongSeen() {
+  try {
+    const raw = localStorage.getItem(SONG_SEEN_KEY);
+    if (raw) return JSON.parse(raw).filter(Number.isInteger);
+  } catch (e) {}
+  return songSeenMem;
+}
+
+function saveSongSeen(list) {
+  songSeenMem = list;
+  try {
+    localStorage.setItem(SONG_SEEN_KEY, JSON.stringify(list));
+  } catch (e) {}
+}
+
+const SILENCE = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+
+function unlockAudio() {
+  try {
+    player.src = SILENCE;
+    const p = player.play();
+    if (p && p.catch) p.catch(() => {});
+  } catch (e) {}
+}
+
+function songError(e) {
+  $("s-error").textContent = e instanceof TypeError ? "Can't reach the server. Please try again." : e.message;
+}
+
+async function startSong() {
+  idle();
+  const run = song.run;
+  show("song");
+  $("s-error").textContent = "";
+  $("s-options").innerHTML = "";
+  $("s-reveal").classList.remove("on");
+  $("s-round").textContent = "Round 1/" + song.total;
+  $("s-score").textContent = "Score 0";
+  $("s-status").textContent = "Loading";
+  $("s-hear").classList.remove("on");
+  $("s-eq").classList.remove("on");
+  $("s-cd").className = "s-cd";
+  $("s-timer").className = "held";
+  try {
+    const data = await getJson("/api/song/new?seen=" + loadSongSeen().join(","));
+    if (run !== song.run) return;
+    Object.assign(song, { questions: data.questions, total: data.total, win: data.win_score, listen: data.listen_ms, think: data.think_seconds, i: 0, score: 0 });
+    saveSongSeen(mergeSeen(loadSongSeen(), data));
+    showSong();
+  } catch (e) {
+    if (run === song.run) songError(e);
+  }
+}
+
+function listening(on) {
+  $("s-eq").classList.toggle("on", on);
+  $("s-cd").classList.toggle("spinning", on);
+}
+
+function waitReady(run) {
+  return new Promise((resolve, reject) => {
+    if (player.readyState >= 3) { resolve(); return; }
+    const done = () => { cleanup(); resolve(); };
+    const fail = () => { cleanup(); reject(new Error("The clip could not be loaded. Please try again.")); };
+    const cleanup = () => {
+      clearTimeout(t);
+      player.removeEventListener("canplay", done);
+      player.removeEventListener("error", fail);
+    };
+    const t = setTimeout(fail, 8000);
+    player.addEventListener("canplay", done);
+    player.addEventListener("error", fail);
+  });
+}
+
+async function playClip(q, run) {
+  $("s-hear").classList.remove("on");
+  $("s-status").textContent = "Get ready";
+  player.pause();
+  player.src = q.clip;
+  player.load();
+  await waitReady(run);
+  if (run !== song.run) return;
+  try { player.currentTime = q.start || 0; } catch (e) {}
+  try {
+    await player.play();
+  } catch (e) {
+    if (run !== song.run) return;
+    $("s-status").textContent = "Ready?";
+    $("s-hear").classList.add("on");
+    return;
+  }
+  if (run !== song.run) return;
+  $("s-status").textContent = "Listen";
+  listening(true);
+  song.clipTimer = setTimeout(() => {
+    player.pause();
+    listening(false);
+    if (run === song.run) startThinking(run);
+  }, song.listen);
+}
+
+function startThinking(run) {
+  song.locked = false;
+  $("s-status").textContent = "Your turn";
+  document.querySelectorAll("#s-options .opt").forEach((o) => { o.disabled = false; });
+  const bar = $("s-timer");
+  bar.className = "";
+  bar.style.animation = "none";
+  void bar.offsetWidth;
+  bar.style.animation = `drain ${song.think}s linear forwards`;
+  clearTimeout(song.timer);
+  song.timer = setTimeout(() => answerSong(null, null), song.think * 1000);
+}
+
+async function showSong() {
+  const q = song.questions[song.i];
+  const run = song.run;
+  song.locked = true;
+  $("s-error").textContent = "";
+  $("s-cd").className = "s-cd";
+  $("s-round").textContent = `Round ${song.i + 1}/${song.total}`;
+  $("s-score").textContent = `Score ${song.score}`;
+  $("s-reveal").classList.remove("on");
+  const bar = $("s-timer");
+  bar.style.animation = "none";
+  bar.className = "held";
+
+  const box = $("s-options");
+  box.innerHTML = "";
+  q.options.forEach((name) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opt";
+    b.textContent = name;
+    b.disabled = true;
+    b.addEventListener("click", () => answerSong(name, b));
+    box.appendChild(b);
+  });
+
+  try {
+    await playClip(q, run);
+  } catch (e) {
+    if (run === song.run) songError(e);
+  }
+}
+
+$("s-hear").addEventListener("click", async () => {
+  const q = song.questions[song.i];
+  const run = song.run;
+  try {
+    await player.play();
+  } catch (e) { return; }
+  if (run !== song.run) return;
+  $("s-hear").classList.remove("on");
+  $("s-status").textContent = "Listen";
+  listening(true);
+  clearTimeout(song.clipTimer);
+  song.clipTimer = setTimeout(() => {
+    player.pause();
+    listening(false);
+    if (run === song.run) startThinking(run);
+  }, song.listen);
+});
+
+async function answerSong(choice, btn) {
+  if (song.locked) return;
+  song.locked = true;
+  clearTimeout(song.timer);
+  const run = song.run;
+  $("s-timer").style.animationPlayState = "paused";
+  const options = document.querySelectorAll("#s-options .opt");
+  options.forEach((o) => { o.disabled = true; });
+  const q = song.questions[song.i];
+
+  let r;
+  try {
+    r = await postJson("/api/song/check", { id: q.id, choice });
+  } catch (e) {
+    if (run !== song.run) return;
+    songError(e);
+    options.forEach((o) => { o.disabled = false; });
+    song.locked = false;
+    return;
+  }
+  if (run !== song.run) return;
+
+  options.forEach((o) => {
+    if (o.textContent === r.answer) o.classList.add("right");
+    else if (o === btn) o.classList.add("wrong");
+  });
+  $("s-status").textContent = r.correct ? "Nice" : "Missed";
+  $("s-cd").classList.add(r.correct ? "ok" : "bad");
+  if (r.correct) song.score++;
+  $("s-score").textContent = `Score ${song.score}`;
+  const verdict = $("s-verdict");
+  verdict.textContent = r.correct ? "Correct!" : choice ? "Nope!" : "Time's up!";
+  verdict.className = "g-verdict " + (r.correct ? "good" : "bad");
+  $("s-answer").textContent = r.answer;
+  $("s-next").textContent = song.i + 1 < song.total ? "Next" : "See result";
+  $("s-reveal").classList.add("on");
+}
+
+$("s-next").addEventListener("click", () => {
+  song.i++;
+  if (song.i < song.total) showSong(); else finishGame(song, "song");
+});
 $("back").addEventListener("click", () => go("menu"));
 const WARP = {
   find: { icon: "img/magnifier.png", text: "Warming up the mic" },
   game: { icon: "img/lucky.png", text: "Shuffling the lines" },
+  song: { icon: "img/note.png", text: "Tuning the radio" },
 };
 let warping = false;
 
 function warp(name) {
   if (warping) return;
+  if (name === "song") unlockAudio();
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { go(name); return; }
   warping = true;
   const el = $("warp");
@@ -452,18 +681,23 @@ function warp(name) {
   setTimeout(() => { el.className = "warp"; warping = false; }, 1500);
 }
 
-["img/tunnel-pink.jpg", "img/tunnel-blue.jpg", "img/magnifier.png", "img/lucky.png", "img/mystery.png"]
+["img/tunnel-pink.jpg", "img/tunnel-blue.jpg", "img/tunnel-green.jpg", "img/magnifier.png", "img/lucky.png", "img/mystery.png", "img/note.png", "img/cd.png"]
   .forEach((src) => { new Image().src = src; });
 
 document.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => warp(b.dataset.go)));
 
 window.addEventListener("popstate", () => {
   const name = location.hash.slice(1);
-  go(name === "find" || name === "game" ? name : "menu", false);
+  go(name === "find" || name === "game" || name === "song" ? name : "menu", false);
 });
 
 $("retry").addEventListener("click", reset);
 $("retry2").addEventListener("click", reset);
 
+fetch("/api/song/ready")
+  .then((r) => r.json())
+  .then((d) => { if (d && d.ready) $("card-song").hidden = false; })
+  .catch(() => {});
+
 const first = location.hash.slice(1);
-go(first === "find" || first === "game" ? first : "menu", false);
+go(first === "find" || first === "game" || first === "song" ? first : "menu", false);

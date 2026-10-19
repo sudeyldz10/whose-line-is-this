@@ -22,3 +22,5 @@ def check_env() -> None:
     missing = missing_keys()
     if missing:
         raise RuntimeError("Missing required environment variables: " + ", ".join(missing))
+
+MEDIA_SRC_EXTRA = [h.strip() for h in os.getenv("MEDIA_SRC_EXTRA", "https://audio-ssl.itunes.apple.com https://*.mzstatic.com").split() if h.strip()]

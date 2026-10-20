@@ -460,7 +460,7 @@ window.addEventListener("popstate", () => {
 
 fetch("/api/song/ready")
   .then((r) => r.json())
-  .then((d) => { if (d && d.ready) $("card-song").hidden = false; })
+  .then((d) => { if (!d || !d.ready) $("card-song").hidden = true; })
   .catch(() => {});
 
 const first = location.hash.slice(1);

@@ -14,7 +14,7 @@
 @font-face { font-family: "Space Grotesk"; font-weight: 700; src: url(fonts/grotesk-700-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 
 :root {
-  --u: min(1vw, 1.78vh);
+  --u: min(1vw, 1.55vh);
   --lime: #dfff2e;
   --lime-px: #b6ff1a;
   --purple: #c92cf0;
@@ -665,3 +665,6 @@ body[data-screen="song"] .song-note {display:block}
 @media (hover: hover) and (min-aspect-ratio: 1/1) {
   .menu-cards .mcard:hover, .menu-cards .mcard:focus-visible { transform: rotate(0) scale(1.04); }
 }
+
+.t2, .t3, .pill, .g-top .tag, .opt, #screen-song .g-top .tag { line-height: 1.05; }
+.opt { padding: .55em 1em; }

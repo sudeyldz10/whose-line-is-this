@@ -33,13 +33,6 @@
       </h1>
 
       <div class="menu-cards">
-        <button type="button" class="mcard find" data-go="find">
-          <img class="mc-img" src="img/mic.png" alt="" />
-          <span class="tag lime">Voice search</span>
-          <span class="mc-title">Find the line</span>
-          <span class="mc-text">Say a famous movie or TV line. We'll find out who said it.</span>
-          <span class="pill mc-btn">Start</span>
-        </button>
         <button type="button" class="mcard play" data-go="game">
           <img class="mc-mystery" src="img/mystery.png" alt="" />
           <span class="tag purple">Game &middot; Prize</span>
@@ -55,58 +48,6 @@
           <span class="pill blue mc-btn">Listen</span>
         </button>
       </div>
-    </section>
-
-    <section id="screen-home" class="screen">
-      <h1 class="title" aria-label="Whose line is this?">
-        <span class="t1" aria-hidden="true"><i style="--r:-9.0deg;--y:-0.000em">W</i><i style="--r:-4.5deg;--y:-0.098em">H</i><i style="--r:0.0deg;--y:-0.130em">O</i><i style="--r:4.5deg;--y:-0.098em">S</i><i style="--r:9.0deg;--y:-0.000em">E</i></span>
-        <span class="t2" aria-hidden="true">LINE IS</span>
-        <span class="t3" aria-hidden="true">THIS?</span>
-      </h1>
-
-      <button id="mic" class="mic" aria-label="Microphone">
-        <svg class="rays" viewBox="0 0 250 100" aria-hidden="true">
-          <g class="ray-l"><line x1="14" y1="10" x2="44" y2="24"/><line x1="2" y1="50" x2="44" y2="50"/><line x1="14" y1="90" x2="44" y2="76"/></g>
-          <g class="ray-r"><line x1="236" y1="10" x2="206" y2="24"/><line x1="248" y1="50" x2="206" y2="50"/><line x1="236" y1="90" x2="206" y2="76"/></g>
-        </svg>
-        <img class="mic-img" src="img/mic.png" alt="" />
-      </button>
-
-      <p id="status" class="status">Tap the mic</p>
-      <p id="heard" class="heard"></p>
-
-      <form id="manual">
-        <input id="manual-text" type="text" placeholder="Type the line if the mic isn't working..." autocomplete="off" />
-        <button type="submit" class="pill small">Search</button>
-      </form>
-      <p id="error" class="error"></p>
-    </section>
-
-    <section id="screen-result" class="screen">
-      <div class="card">
-        <div class="photo-wrap">
-          <img id="r-photo" alt="" />
-          <span id="r-photo-kind" class="tag lime"></span>
-        </div>
-        <div class="info">
-          <p class="tag green" id="r-conf"></p>
-          <h2 id="r-character"></h2>
-          <p class="title-line" id="r-title"></p>
-          <blockquote id="r-quote"></blockquote>
-          <p class="heard-line" id="r-heard"></p>
-          <p class="src">Source: <a id="r-source" target="_blank" rel="noopener noreferrer"></a></p>
-          <p class="src"><a id="r-tmdb" target="_blank" rel="noopener noreferrer">TMDB page</a></p>
-          <p class="disclaimer" id="r-disclaimer"></p>
-          <button id="retry" class="pill">Try again</button>
-        </div>
-      </div>
-    </section>
-
-    <section id="screen-notfound" class="screen">
-      <h2 class="nf-title">Not found</h2>
-      <p class="banner" id="nf-reason">We couldn't match this line to a reliable source.</p>
-      <p class="nf-sub">Speak a bit louder, or type the line instead.</p>
-      <button id="retry2" class="pill">Try again</button>
     </section>
 
     <section id="screen-game" class="screen">
@@ -170,10 +111,7 @@
   </main>
 
   <footer>
-    Movie and TV data from <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a>.
-    This product uses the TMDB API but is not endorsed or certified by TMDB.
     <span class="song-note">Song previews courtesy of Apple Music / iTunes.</span>
-    <span class="voice-note">Your voice is sent to Google Gemini to read the line. We do not store it.</span>
   </footer>
 
   <script src="app.js"></script>

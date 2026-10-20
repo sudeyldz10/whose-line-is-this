@@ -1,0 +1,4 @@
+# One line per entry. Format:
+# line | character | series or film | year | difficulty (e = easy, m = medium, h = hard)
+# Lines starting with # are skipped. Example (not a real entry, you can delete it):
+# This is an example line. | Example Character | Example Series | 2010 | m

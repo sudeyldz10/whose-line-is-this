@@ -12,7 +12,7 @@ from . import config
 
 log = logging.getLogger("app")
 
-HEAVY_PATHS = ("/api/guess", "/api/transcribe")
+HEAVY_PATHS = ()
 
 _PATTERNS = [
     re.compile(r"AIza[0-9A-Za-z_\-]{20,}"),
@@ -92,7 +92,7 @@ limiter = RateLimiter()
 
 CSP = (
     "default-src 'self'; "
-    "img-src 'self' data: blob: https://image.tmdb.org; "
+    "img-src 'self' data: blob:; "
     "style-src 'self' 'unsafe-inline'; "
     "script-src 'self'; "
     "font-src 'self'; "

@@ -26,40 +26,49 @@ def parse_seen(raw: str) -> set[int]:
     return seen
 
 
+TURKISH_PER_GAME = 2
+
+
 def pick_questions(total: int = TOTAL, seen: set[int] | None = None, info: dict | None = None) -> list[dict]:
     seen = seen or set()
-    order = [i for i in range(len(LINES)) if i not in seen]
-    if len(order) < total * 2:
-        order = list(range(len(LINES)))
-        if info is not None:
-            info["reset"] = True
-    random.shuffle(order)
+    levels = [level for level, count in MIX for _ in range(count)][:total]
+    tr_slots = set(random.sample(range(total), min(TURKISH_PER_GAME, total)))
 
-    chosen, groups = [], set()
-    done = 0
-    for level, count in MIX:
-        done += count
-        for i in order:
-            if len(chosen) >= done:
+    def pool(lang: str) -> list[int]:
+        every = [i for i in range(len(LINES)) if (LINES[i].get("lang", "en") == "tr") == (lang == "tr")]
+        fresh = [i for i in every if i not in seen]
+        if len(fresh) < (total - TURKISH_PER_GAME if lang == "en" else TURKISH_PER_GAME) * 2:
+            if lang == "en" and info is not None:
+                info["reset"] = True
+            fresh = every
+        random.shuffle(fresh)
+        return fresh
+
+    pools = {"tr": pool("tr"), "en": pool("en")}
+    chosen: list[int | None] = [None] * total
+    groups: set[str] = set()
+    for slot in sorted(range(total), key=lambda k: k not in tr_slots):
+        lang = "tr" if slot in tr_slots else "en"
+        for level_match in (True, False):
+            for i in pools[lang]:
+                if i in chosen or LINES[i]["group"] in groups:
+                    continue
+                if level_match and LINES[i]["level"] != levels[slot]:
+                    continue
+                groups.add(LINES[i]["group"])
+                chosen[slot] = i
                 break
-            if LINES[i]["level"] != level or LINES[i]["group"] in groups or i in chosen:
-                continue
-            groups.add(LINES[i]["group"])
-            chosen.append(i)
-    for i in order:
-        if len(chosen) >= total:
-            break
-        if i in chosen or LINES[i]["group"] in groups:
-            continue
-        groups.add(LINES[i]["group"])
-        chosen.append(i)
+            if chosen[slot] is not None:
+                break
+    chosen = [i for i in chosen if i is not None]
     random.shuffle(chosen)
 
-    people = [(d["character"], d["group"]) for d in LINES] + [(d["name"], d["group"]) for d in DECOYS]
+    people = [(d["character"], d["group"], d.get("lang", "en")) for d in LINES] + [(d["name"], d["group"], d.get("lang", "en")) for d in DECOYS]
     questions = []
     for i in chosen:
         item = LINES[i]
-        pool = sorted({name for name, group in people if group != item["group"] and name != item["character"]})
+        lang = item.get("lang", "en")
+        pool = sorted({name for name, group, lg in people if lg == lang and group != item["group"] and name != item["character"]})
         names = random.sample(pool, 3) + [item["character"]]
         random.shuffle(names)
         questions.append({"id": i, "line": item["line"], "options": names})

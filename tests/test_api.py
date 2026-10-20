@@ -113,3 +113,14 @@ def test_two_turkish_three_english_per_game():
             lang = item.get("lang", "en")
             names = {d["character"] for d in game.LINES if d.get("lang", "en") != lang} | {d["name"] for d in game.DECOYS if d.get("lang", "en") != lang}
             assert not (set(q["options"]) - {item["character"]}) & names
+
+
+def test_song_two_turkish_three_foreign_per_game(client, monkeypatch):
+    from backend import song
+
+    monkeypatch.setattr(song, "CLIPS", {song.slug(s["title"], s["artist"]): "https://example.com/c.mp3" for s in song.SONGS})
+    monkeypatch.setattr(song, "local_clip", lambda s: None)
+    for _ in range(20):
+        questions = client.get("/api/song/new").json()["questions"]
+        langs = [song.lang_of(song.SONGS[q["id"]]) for q in questions]
+        assert langs.count("tr") == 2 and langs.count("en") == 3

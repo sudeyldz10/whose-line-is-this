@@ -62,31 +62,49 @@ def parse_seen(raw: str) -> set[int]:
     return seen
 
 
+TURKISH_ARTISTS = {
+    "Duman", "Gripin", "Gülşen", "Hadise", "Hande Yener", "Kayahan", "Kenan Doğulu", "Mabel Matiz",
+    "Mor ve Ötesi", "Murat Boz", "Mustafa Sandal", "Sertab Erener", "Sezen Aksu", "Tarkan", "Teoman",
+}
+TURKISH_PER_GAME = 2
+
+
+def lang_of(song: dict) -> str:
+    return "tr" if song["artist"] in TURKISH_ARTISTS else "en"
+
+
 def pick_songs(total: int, seen: set[int], info: dict | None = None) -> list[int]:
     pool = playable()
-    fresh = [i for i in pool if i not in seen]
-    if len(fresh) < total * 2:
-        fresh = pool
-        if info is not None:
-            info["reset"] = True
-    random.shuffle(fresh)
+    pools = {}
+    for lang in ("tr", "en"):
+        full = [i for i in pool if lang_of(SONGS[i]) == lang]
+        fresh = [i for i in full if i not in seen]
+        need = TURKISH_PER_GAME * 2 if lang == "tr" else (total - TURKISH_PER_GAME) * 2
+        if len(fresh) < need:
+            fresh = full
+            if info is not None:
+                info["reset"] = True
+        random.shuffle(fresh)
+        pools[lang] = (fresh, full)
 
+    slots = [level for level, count in MIX for _ in range(count)]
+    random.shuffle(slots)
+    langs = ["tr"] * min(TURKISH_PER_GAME, len(pools["tr"][1])) + ["en"] * total
+    langs = langs[:total]
     chosen, artists = [], set()
-
-    def take(source: list[int], limit: int) -> None:
-        for i in source:
-            if len(chosen) >= limit:
-                return
-            if SONGS[i]["artist"] in artists or i in chosen:
-                continue
-            artists.add(SONGS[i]["artist"])
-            chosen.append(i)
-
-    done = 0
-    for level, count in MIX:
-        done += count
-        take([i for i in fresh if SONGS[i]["level"] == level], done)
-    take(fresh, total)
+    for level, lang in zip(slots, langs):
+        fresh, full = pools[lang]
+        for source in (
+            [i for i in fresh if SONGS[i]["level"] == level],
+            fresh,
+            [i for i in full if SONGS[i]["level"] == level],
+            full,
+        ):
+            pick = next((i for i in source if i not in chosen and SONGS[i]["artist"] not in artists), None)
+            if pick is not None:
+                chosen.append(pick)
+                artists.add(SONGS[pick]["artist"])
+                break
     random.shuffle(chosen)
     return chosen
 
@@ -94,11 +112,13 @@ def pick_songs(total: int, seen: set[int], info: dict | None = None) -> list[int
 def options_for(index: int) -> list[str]:
     item = SONGS[index]
     right = label(item)
-    others = [s for s in SONGS if s["artist"] != item["artist"] and label(s) != right]
+    lang = lang_of(item)
+    others = [s for s in SONGS if s["artist"] != item["artist"] and label(s) != right and lang_of(s) == lang]
     same = [label(s) for s in others if s["level"] == item["level"]]
     rest = [label(s) for s in others if s["level"] != item["level"]]
     names = random.sample(same, 2) if len(same) >= 2 else same[:]
-    names += random.sample([n for n in rest + same if n not in names], 3 - len(names))
+    extra = [n for n in rest + same if n not in names]
+    names += random.sample(extra, min(3 - len(names), len(extra)))
     names.append(right)
     random.shuffle(names)
     return names

@@ -119,7 +119,7 @@ LINES = [
     {'line': 'Smelly cat, smelly cat, what are they feeding you?', 'character': 'Phoebe Buffay', 'title': 'Friends', 'year': '1994', 'group': 'friends', 'level': 'easy', 'lang': 'en'},
     {'line': 'Could I BE any more...', 'character': 'Chandler Bing', 'title': 'Friends', 'year': '1994', 'group': 'friends', 'level': 'easy', 'lang': 'en'},
     {'line': "I'm not great at the advice. Can I interest you in a sarcastic comment?", 'character': 'Chandler Bing', 'title': 'Friends', 'year': '1994', 'group': 'friends', 'level': 'easy', 'lang': 'en'},
-    {'line': 'Seven! Seven! Seven!', 'character': 'Ross Geller', 'title': 'Friends', 'year': '1994', 'group': 'friends', 'level': 'easy', 'lang': 'en'},
+    {'line': 'Seven! Seven! Seven!', 'character': 'Monica Geller', 'title': 'Friends', 'year': '1994', 'group': 'friends', 'level': 'easy', 'lang': 'en'},
     {'line': "They don't know that we know they know we know.", 'character': 'Monica Geller', 'title': 'Friends', 'year': '1994', 'group': 'friends', 'level': 'easy', 'lang': 'en'},
     {'line': 'Soft kitty, warm kitty, little ball of fur.', 'character': 'Sheldon Cooper', 'title': 'The Big Bang Theory', 'year': '2007', 'group': 'tbbt', 'level': 'easy', 'lang': 'en'},
     {'line': "I'm not crazy. My mother had me tested.", 'character': 'Sheldon Cooper', 'title': 'The Big Bang Theory', 'year': '2007', 'group': 'tbbt', 'level': 'easy', 'lang': 'en'},

@@ -2,8 +2,8 @@
 @font-face { font-family: "Pixelify Sans"; font-weight: 400; src: url(fonts/pixelify-400-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 @font-face { font-family: "Pixelify Sans"; font-weight: 700; src: url(fonts/pixelify-700-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Pixelify Sans"; font-weight: 700; src: url(fonts/pixelify-700-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: "Lilita One"; src: url(fonts/lilita-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: "Lilita One"; src: url(fonts/lilita-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Baloo 2"; font-weight: 400 800; src: url(fonts/baloo-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Baloo 2"; font-weight: 400 800; src: url(fonts/baloo-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 @font-face { font-family: "Bungee"; src: url(fonts/bungee-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Bungee"; src: url(fonts/bungee-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 @font-face { font-family: "Space Grotesk"; font-weight: 400; src: url(fonts/grotesk-400-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
@@ -111,7 +111,7 @@ main {
   50% { transform: translateY(calc(var(--y) - .06em)) rotate(calc(var(--r) + 2.5deg)); }
 }
 .t2 {
-  font-family: "Lilita One", sans-serif;
+  font-family: "Baloo 2", sans-serif;
   font-size: calc(var(--u) * 8.4 * var(--ts, 1));
   color: var(--purple);
   margin-top: -.02em;
@@ -123,7 +123,7 @@ main {
 }
 .t3 {
   position: relative;
-  font-family: "Lilita One", sans-serif;
+  font-family: "Baloo 2", sans-serif;
   font-size: calc(var(--u) * 6.6 * var(--ts, 1));
   color: var(--navy);
   background: var(--lime);
@@ -235,7 +235,7 @@ main {
 .error { margin-top: calc(var(--u) * 1.2); min-height: 1.3em; color: #ff8fb0; font-size: calc(var(--u) * 1.2); }
 
 .pill {
-  font-family: "Lilita One", sans-serif; text-transform: uppercase; letter-spacing: .02em;
+  font-family: "Baloo 2", sans-serif; text-transform: uppercase; letter-spacing: .02em;
   font-size: calc(var(--u) * 1.8);
   color: var(--navy); background: var(--lime);
   border: .13em solid var(--navy);
@@ -284,7 +284,7 @@ main {
 .info > :nth-child(n+5) { animation-delay: .32s; }
 @keyframes rise { from { opacity: 0; transform: translateY(1.4vh); } to { opacity: 1; transform: none; } }
 .info h2 {
-  font-family: "Lilita One", sans-serif; font-weight: 400;
+  font-family: "Baloo 2", sans-serif; font-weight: 400;
   font-size: calc(var(--u) * 6); line-height: 1;
   color: var(--purple);
   -webkit-text-stroke: .12em var(--navy); paint-order: stroke fill;
@@ -303,7 +303,7 @@ blockquote {
 .info .pill { margin-top: calc(var(--u) * 1.6); }
 
 .nf-title {
-  font-family: "Lilita One", sans-serif; font-weight: 400;
+  font-family: "Baloo 2", sans-serif; font-weight: 400;
   font-size: calc(var(--u) * 9.4); line-height: 1;
   color: var(--purple);
   -webkit-text-stroke: .12em var(--navy); paint-order: stroke fill;
@@ -379,7 +379,7 @@ body[data-screen="menu"] .back { display: none; }
 .mcard > .tag { margin-top: calc(var(--u) * 1.4); }
 .mc-img, .mc-mystery { animation: float 3.4s ease-in-out infinite; image-rendering: pixelated; height: calc(var(--u) * 9.5); width: auto; }
 .mc-title {
-  font-family: "Lilita One", sans-serif; line-height: 1;
+  font-family: "Baloo 2", sans-serif; line-height: 1;
   font-size: calc(var(--u) * 3.6); color: var(--purple);
   -webkit-text-stroke: .12em var(--navy); paint-order: stroke fill;
   margin: calc(var(--u) * .9) 0 calc(var(--u) * .8);
@@ -390,7 +390,7 @@ body[data-screen="menu"] .back { display: none; }
 
 .g-wrap { width: calc(var(--u) * 56); max-width: 94vw; display: flex; flex-direction: column; align-items: center; }
 .g-top { display: flex; justify-content: space-between; width: 100%; }
-.g-top .tag { font-family: "Lilita One", sans-serif; font-weight: 400; letter-spacing: .1em; font-size: calc(var(--u) * 1.2); }
+.g-top .tag { font-family: "Baloo 2", sans-serif; font-weight: 400; letter-spacing: .1em; font-size: calc(var(--u) * 1.2); }
 .timer {
   width: 100%; height: calc(var(--u) * .8); margin-top: calc(var(--u) * 1.2);
   background: #151638; border: 2px solid var(--navy);
@@ -437,7 +437,7 @@ body[data-screen="menu"] .back { display: none; }
 .g-line.long { font-size: calc(var(--u) * 2.5); }
 .g-options { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 1.2); width: 100%; }
 .opt {
-  font-family: "Lilita One", sans-serif; font-size: calc(var(--u) * 2.1);
+  font-family: "Baloo 2", sans-serif; font-size: calc(var(--u) * 2.1);
   color: var(--navy); background: var(--lime);
   border: .13em solid var(--navy); box-shadow: 0 0 0 .1em var(--lime);
   border-radius: 999px; padding: .5em 1em; cursor: pointer;
@@ -454,7 +454,7 @@ body[data-screen="menu"] .back { display: none; }
 }
 .g-reveal.on { visibility: visible; animation: rise .4s ease-out both; }
 .g-verdict {
-  font-family: "Lilita One", sans-serif; line-height: 1;
+  font-family: "Baloo 2", sans-serif; line-height: 1;
   font-size: calc(var(--u) * 3.4);
   -webkit-text-stroke: .12em var(--navy); paint-order: stroke fill;
 }
@@ -626,7 +626,7 @@ body[data-screen="home"] .voice-note { display: block; }
 .warp.song .warp-bg { background-image: url(img/tunnel-green.jpg); }
 .warp.song .warp-text { color: #7dff7d; }
 .warp.song .warp-bar i { background: #7dff7d; }
-#screen-song .g-top .tag { font-family: "Lilita One", sans-serif; font-weight: 400; letter-spacing: .1em; font-size: calc(var(--u) * 1.2); }
+#screen-song .g-top .tag { font-family: "Baloo 2", sans-serif; font-weight: 400; letter-spacing: .1em; font-size: calc(var(--u) * 1.2); }
 #s-timer.held { animation: none; transform: scaleX(1); background: var(--lime); }
 @media (max-aspect-ratio: 1 / 1) {
   .menu-cards .mcard { width: 84vw; }
@@ -645,7 +645,7 @@ body[data-screen="home"] .voice-note { display: block; }
 .mcard.song[hidden] { display: none; }
 .edition {
   display: inline-block; margin-top: calc(var(--u) * 1.2);
-  font-family: "Lilita One", sans-serif; text-transform: uppercase; letter-spacing: .04em;
+  font-family: "Baloo 2", sans-serif; text-transform: uppercase; letter-spacing: .04em;
   font-size: calc(var(--u) * 2.1); line-height: 1;
   color: var(--navy); background: var(--lime);
   border: .1em solid var(--navy); box-shadow: 0 0 0 .1em var(--lime);
